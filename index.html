@@ -1,162 +1,47 @@
 <!doctype html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Prueba Supabase - Aprendizaje</title>
-  <style>
-    :root { --bg:#07111f; --panel:#0e1b2d; --line:rgba(255,255,255,.12); --text:#f8fafc; --muted:#94a3b8; --blue:#3b82f6; --green:#22c55e; --red:#ef4444; }
-    * { box-sizing: border-box; }
-    body { margin:0; font-family:Arial,sans-serif; background:radial-gradient(circle at top,#102548,var(--bg)); color:var(--text); min-height:100vh; padding:24px; }
-    .container { max-width:1050px; margin:0 auto; }
-    .hero { background:linear-gradient(135deg,rgba(59,130,246,.18),rgba(34,197,94,.08)); border:1px solid var(--line); border-radius:24px; padding:28px; margin-bottom:20px; }
-    h1,h2 { margin-top:0; }
-    p { color:var(--muted); line-height:1.6; }
-    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:18px; }
-    .panel { background:rgba(14,27,45,.92); border:1px solid var(--line); border-radius:20px; padding:20px; box-shadow:0 20px 45px rgba(0,0,0,.24); }
-    .wide { grid-column:1 / -1; }
-    label { display:block; font-weight:bold; margin-top:12px; margin-bottom:6px; color:#bfdbfe; font-size:14px; }
-    input { width:100%; padding:12px; border-radius:12px; border:1px solid var(--line); background:#07111f; color:var(--text); outline:none; }
-    button { margin-top:14px; border:0; border-radius:12px; padding:12px 14px; background:var(--blue); color:white; font-weight:bold; cursor:pointer; }
-    button.danger { background:var(--red); }
-    .status { margin-top:12px; padding:12px; border-radius:12px; background:rgba(255,255,255,.06); color:var(--muted); white-space:pre-wrap; }
-    .tag { display:inline-block; padding:5px 10px; border-radius:999px; background:rgba(59,130,246,.18); color:#bfdbfe; font-size:13px; font-weight:bold; margin-right:6px; margin-bottom:6px; }
-    table { width:100%; border-collapse:collapse; margin-top:12px; overflow:hidden; border-radius:12px; }
-    th,td { border-bottom:1px solid var(--line); padding:10px; text-align:left; font-size:14px; vertical-align:top; }
-    th { color:#bfdbfe; background:rgba(255,255,255,.06); }
-    .small { font-size:13px; color:var(--muted); }
-  </style>
-</head>
-<body>
-  <main class="container">
-    <section class="hero">
-      <h1>Proyecto de aprendizaje: conectar una web con Supabase</h1>
-      <p>Este proyecto es una prueba simple para entender cómo tu página se comunica con la base de datos de Supabase. No usa React ni Vite. Es solo un archivo HTML para aprender más fácil.</p>
-      <span class="tag">Conexión Supabase</span><span class="tag">Leer tabla usuarios</span><span class="tag">Login básico</span><span class="tag">Probar cualquier tabla</span>
-    </section>
-
-    <section class="grid">
-      <article class="panel">
-        <h2>1. Estado de conexión</h2>
-        <p>Comprueba si la página puede hablar con Supabase usando la URL y la API key.</p>
-        <button onclick="probarConexion()">Probar conexión</button>
-        <div id="estadoConexion" class="status">Todavía no probaste la conexión.</div>
-      </article>
-
-      <article class="panel">
-        <h2>2. Login básico</h2>
-        <p>Busca en la tabla usuarios una fila donde coincidan nombre y password.</p>
-        <label for="nombre">Nombre de usuario</label>
-        <input id="nombre" type="text" placeholder="Ejemplo: Alexis" />
-        <label for="password">Contraseña</label>
-        <input id="password" type="password" placeholder="Contraseña de prueba" />
-        <button onclick="iniciarSesion()">Iniciar sesión</button>
-        <button class="danger" onclick="cerrarSesion()">Cerrar sesión</button>
-        <div id="resultadoLogin" class="status">No hay sesión iniciada.</div>
-      </article>
-
-      <article class="panel wide">
-        <h2>3. Probar cualquier tabla</h2>
-        <p>Escribe el nombre de una tabla. Si existe y la key tiene permiso, aparecerán los datos.</p>
-        <label for="tabla">Nombre de la tabla</label>
-        <input id="tabla" type="text" placeholder="usuarios" value="usuarios" />
-        <button onclick="leerTabla()">Leer tabla</button>
-        <div id="resultadoTabla" class="status">Aquí aparecerá el resultado.</div>
-        <div id="tablaVisual"></div>
-      </article>
-
-      <article class="panel wide">
-        <h2>4. Qué estás aprendiendo</h2>
-        <p>La URL indica a qué proyecto de Supabase se conecta la web. La API key es la llave pública que permite hacer consultas según los permisos configurados por el administrador.</p>
-        <p>La prueba espera una tabla llamada usuarios con columnas nombre, password, nivel, exp y rango. Si tu amigo cambió esos nombres, hay que cambiar esta prueba.</p>
-        <p class="small">Advertencia: este login es solo para aprender. En una web real no conviene guardar contraseñas como texto visible en una tabla.</p>
-      </article>
-    </section>
-  </main>
-
-  <script type="module">
-    import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
-    const supabaseUrl = "https://nwvcvtoiosozziaqemtk.supabase.co";
-    const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im53dmN2dG9pb3NvenppYXFlbXRrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk5MjU2NjUsImV4cCI6MjA5NTUwMTY2NX0.qhNFV8tkgg0kCXt8tg2AEPu8bRvZ0XqOtr-seY4R3qg";
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const usuarioGuardado = localStorage.getItem("usuario_aprendizaje_supabase");
-    if (usuarioGuardado) mostrarUsuario(JSON.parse(usuarioGuardado));
-
-    window.probarConexion = async function() {
-      const caja = document.getElementById("estadoConexion");
-      caja.textContent = "Probando conexión con Supabase...";
-      try {
-        const { data, error } = await supabase.from("usuarios").select("nombre, nivel, exp, rango").limit(1);
-        if (error) { caja.textContent = "La página intentó conectarse, pero Supabase respondió con error:\n\n" + error.message; return; }
-        caja.textContent = "Conexión correcta. Supabase respondió bien.\n\nFilas recibidas: " + data.length;
-      } catch (error) { caja.textContent = "Error general de conexión:\n\n" + error.message; }
-    };
-
-    window.iniciarSesion = async function() {
-      const nombre = document.getElementById("nombre").value.trim();
-      const password = document.getElementById("password").value.trim();
-      const caja = document.getElementById("resultadoLogin");
-      if (!nombre || !password) { caja.textContent = "Escribe nombre y contraseña."; return; }
-      caja.textContent = "Consultando la tabla usuarios...";
-      try {
-        const { data, error } = await supabase.from("usuarios").select("nombre, password, nivel, exp, rango").eq("nombre", nombre).eq("password", password).limit(1);
-        if (error) { caja.textContent = "Supabase respondió con error:\n\n" + error.message; return; }
-        if (!data || data.length === 0) { caja.textContent = "Usuario no encontrado o contraseña incorrecta."; return; }
-        const usuario = data[0];
-        localStorage.setItem("usuario_aprendizaje_supabase", JSON.stringify(usuario));
-        mostrarUsuario(usuario);
-      } catch (error) { caja.textContent = "Error general:\n\n" + error.message; }
-    };
-
-    window.cerrarSesion = function() {
-      localStorage.removeItem("usuario_aprendizaje_supabase");
-      document.getElementById("resultadoLogin").textContent = "Sesión cerrada. Ahora estás como visitante.";
-    };
-
-    function mostrarUsuario(usuario) {
-      document.getElementById("resultadoLogin").textContent =
-        "Sesión iniciada correctamente.\n\n" +
-        "Nombre: " + (usuario.nombre ?? "Sin nombre") + "\n" +
-        "Nivel: " + (usuario.nivel ?? "Sin nivel") + "\n" +
-        "Experiencia: " + (usuario.exp ?? "Sin experiencia") + "\n" +
-        "Rango: " + (usuario.rango ?? "Sin rango");
-    }
-
-    window.leerTabla = async function() {
-      const tabla = document.getElementById("tabla").value.trim();
-      const caja = document.getElementById("resultadoTabla");
-      const tablaVisual = document.getElementById("tablaVisual");
-      tablaVisual.innerHTML = "";
-      if (!tabla) { caja.textContent = "Escribe el nombre de una tabla."; return; }
-      caja.textContent = "Leyendo tabla " + tabla + "...";
-      try {
-        const { data, error } = await supabase.from(tabla).select("*").limit(20);
-        if (error) { caja.textContent = "Supabase respondió con error:\n\n" + error.message; return; }
-        caja.textContent = "Tabla leída correctamente. Filas encontradas: " + data.length;
-        pintarTabla(data);
-      } catch (error) { caja.textContent = "Error general:\n\n" + error.message; }
-    };
-
-    function pintarTabla(filas) {
-      const contenedor = document.getElementById("tablaVisual");
-      if (!filas || filas.length === 0) { contenedor.innerHTML = "<p>No hay filas para mostrar.</p>"; return; }
-      const columnas = Object.keys(filas[0]);
-      let html = "<table><thead><tr>";
-      for (const columna of columnas) html += "<th>" + escapeHtml(columna) + "</th>";
-      html += "</tr></thead><tbody>";
-      for (const fila of filas) {
-        html += "<tr>";
-        for (const columna of columnas) html += "<td>" + escapeHtml(String(fila[columna] ?? "")) + "</td>";
-        html += "</tr>";
-      }
-      html += "</tbody></table>";
-      contenedor.innerHTML = html;
-    }
-
-    function escapeHtml(texto) {
-      return texto.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#039;");
-    }
-  </script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>MUTODEX MGG</title>
+    <meta name="description" content="Catálogo de Mutants Genetic Gladiators con novedades, servicios, calculadora EVO y descargas." />
+    <link rel="icon" href="https://github.com/luqueSmith/MGG/blob/main/img/Logo_mgg.png?raw=true" />
+    <script>
+      (function() {
+        try {
+          var originalFetch = window.fetch;
+          var currentFetch = originalFetch;
+          function defineFetchOn(obj) {
+            Object.defineProperty(obj, 'fetch', {
+              get: function() { return currentFetch; },
+              set: function(v) { currentFetch = v; },
+              configurable: true,
+              enumerable: true
+            });
+          }
+          try {
+            defineFetchOn(window);
+          } catch (e1) {
+            try {
+              defineFetchOn(Window.prototype);
+            } catch (e2) {
+              try {
+                defineFetchOn(Object.getPrototypeOf(window));
+              } catch (e3) {
+                console.warn('Could not redefine window.fetch early:', e3);
+              }
+            }
+          }
+        } catch (e) {
+          console.warn('Fetch redirection exception:', e);
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/MGG-PRUEBA_UPDATE/assets/index-Ds2ft0Zr.js"></script>
+    <link rel="stylesheet" crossorigin href="/MGG-PRUEBA_UPDATE/assets/index-DGz_3Cra.css">
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
 </html>
+
